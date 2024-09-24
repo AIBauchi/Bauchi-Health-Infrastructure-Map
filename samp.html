@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bauchi State Map with Label</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 600px;
+      width: 100%;
+    }
+  </style>
+  <!-- fa -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    // Initialize the map
+var map = L.map('map').setView([10.28, 9.82], 7); // Centering around Bauchi
+
+// Add OpenStreetMap tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+}).addTo(map);
+
+// Fetch the geojson from the API
+fetch('https://nominatim.openstreetmap.org/lookup?osm_ids=R3722233&format=jsonv2&polygon_geojson=1')
+    .then(response => response.json())
+    .then(data => {
+        var geojson = data[0].geojson; // Extract geojson
+        L.geoJSON(geojson).addTo(map); // Add to map
+    });
+
+
+// Add a green marker for Bauchi with a popup
+L.marker([10.31, 9.84]).addTo(map)
+    .bindPopup('Bauchi State')
+    .openPopup()
+    .on('click', function() {
+        alert('You clicked the marker!');
+    });
+    
+// smaller markers for 'amenity': 'hospital'
+fetch("https://overpass-api.de/api/interpreter?data=[out:json];area['name'='Bauchi']->.searchArea;(node['amenity'='hospital'](area.searchArea);way['amenity'='hospital'](area.searchArea);relation['amenity'='hospital'](area.searchArea););out%20body;>;out%20skel%20qt;")
+    .then(response => response.json())
+    .then(data => {
+        data.elements.forEach(element => {
+            var lat = element.lat || element.center.lat;
+            var lon = element.lon || element.center.lon;
+            // small circle for 'amenity': 'hospital'
+
+            // 'hospital', 'health_centre', 'dispensary', 'N/A'
+            if (element.tags['health_facility:type'] === 'hospital') {
+                L.circle([lat, lon], {
+                    color: 'green',
+                    fillColor: '#0f3',
+                    fillOpacity: 0.5,
+                    radius: 5000
+                }).addTo(map);
+            }
+            else if (element.tags['health_facility:type'] === 'health_centre') {
+                L.circle([lat, lon], {
+                    color: 'blue',
+                    fillColor: '#03f',
+                    fillOpacity: 0.5,
+                    radius: 2000
+                }).addTo(map);
+            }
+            else if (element.tags['health_facility:type'] === 'dispensary') {
+                L.circle([lat, lon], {
+                    color: 'yellow',
+                    fillColor: '#ff3',
+                    fillOpacity: 0.5,
+                    radius: 1000
+                }).addTo(map);
+            }
+            else {
+                L.circle([lat, lon], {
+                    color: 'red',
+                    fillColor: '#f03',
+                    fillOpacity: 0.5,
+                    radius: 500,
+                }).addTo(map);
+            }
+           
+
+            
+    });
+});
+// add a legend
+var legend = L.control({position: 'bottomright'});
+legend.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'info legend');
+    div.style.backgroundColor = 'white';
+    div.style.padding = '10px';
+    div.innerHTML += '<h4>Health Facilities</h4>';
+    div.innerHTML += '<i class="fa fa-circle" style="color: #0f3">   </i><span>Hospital</span><br>';
+    div.innerHTML += '<i class="fa fa-circle" style="color: #03f"></i><span>Health Centre</span><br>';
+    div.innerHTML += '<i class="fa fa-circle" style="color: #ff3"></i><span>Dispensary</span><br>';
+    div.innerHTML += '<i class="fa fa-circle" style="color: #f03"></i><span>Other</span><br>';
+    return div;
+};
+legend.addTo(map);
+
+// add a scale bar
+L.control.scale().addTo(map);
+
+
+</script>
+
+
+</body>
+</html>
