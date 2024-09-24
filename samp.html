@@ -23,6 +23,7 @@
 
 <div id="map"></div>
 
+
 <!-- The Modal -->
 <div id="addModal" class="modal">
     <div class="modal-dialog">
@@ -111,19 +112,38 @@ L.marker([10.31, 9.84]).addTo(map)
         map.closePopup();
 
     })
-    // after 4 seconds close the popup
+    
     
     ;
+var hospitalcount = 0;
 
 // smaller markers for 'amenity': 'hospital'
 fetch("https://overpass-api.de/api/interpreter?data=[out:json];area['name'='Bauchi']->.searchArea;(node['amenity'='hospital'](area.searchArea);way['amenity'='hospital'](area.searchArea);relation['amenity'='hospital'](area.searchArea););out%20body;>;out%20skel%20qt;")
     .then(response => response.json())
     .then(data => {
+        count = data.elements.length;
+        exactcount = 0;
         data.elements.forEach(element => {
+            
+            // if (!element.tags) {
+            //     return;
+            // }
+            if (element.type !== 'node') {
+                return;
+            }
+            exactcount++;
+
+            
             var lat = element.lat || element.center.lat;
             var lon = element.lon || element.center.lon;
             // small circle for 'amenity': 'hospital'
-
+            hospitalcount++;
+            try { 
+                document.getElementById('cnt').innerText = hospitalcount;
+            }
+            catch (e) {
+                console.log(e);
+            }
             // 'hospital', 'health_centre', 'dispensary', 'N/A'
             if (element.tags['health_facility:type'] === 'hospital') {
                 L.circle([lat, lon], {
@@ -161,21 +181,24 @@ fetch("https://overpass-api.de/api/interpreter?data=[out:json];area['name'='Bauc
                 .on('click', function() {
                     showHospitalInfo(element.tags);
                     // alert('You clicked the dispensary!');
-                });
-                  
+                });     
             }
             else {
                 L.circle([lat, lon], {
                     color: 'red',
                     fillColor: '#f03',
                     fillOpacity: 0.5,
-                    radius: 500,
-                }).addTo(map);
+                    radius: 500
+                }).addTo(map)
+                .on('click', function() {
+                    showHospitalInfo(element.tags);
+                    // alert('You clicked the other!');
+                });
             }
-           
-
+            
             
     });
+    console.log('Total: ' + count + ' Exact: ' + exactcount);
 });
 // add a legend
 var legend = L.control({position: 'bottomright'});
@@ -188,6 +211,8 @@ legend.onAdd = function (map) {
     div.innerHTML += '<i class="fa fa-circle" style="color: #03f"></i><span>Health Centre</span><br>';
     div.innerHTML += '<i class="fa fa-circle" style="color: #ff3"></i><span>Dispensary</span><br>';
     div.innerHTML += '<i class="fa fa-circle" style="color: #f03"></i><span>Other</span><br>';
+    div.innerHTML += '<br>';
+    div.innerHTML += '<h4>Number of Hospitals: <span id="cnt">' + hospitalcount + '</span></h4>';
     return div;
 };
 legend.addTo(map);
@@ -203,7 +228,7 @@ setTimeout(function() {
 <script>
     // function on click popup show infomation about the hospital as on modal bootstrap
     function showHospitalInfo(info) {
-    console.log(info);
+    // console.log(info);
     document.getElementById('name').innerText = info.name || 'N/A';
     document.getElementById('health_facility_type').innerText = info['health_facility:type'] || 'N/A';
     document.getElementById('operator').innerText = info.operator || 'N/A';
